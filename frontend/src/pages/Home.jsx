@@ -1,9 +1,10 @@
-import React from "react";
 import { NavLink } from "react-router-dom";
+import NavBar from "../components/Navbar";
 
-function HomePage() {
+function Home() {
   return (
     <>
+      <NavBar />
       <div className="bg-gray-50 text-gray-900">
         {/* Hero Section */}
         <section className="bg-white py-16 px-6 text-center shadow-md">
@@ -159,4 +160,4 @@ function HomePage() {
   );
 }
 
-export default HomePage;
+export default Home;

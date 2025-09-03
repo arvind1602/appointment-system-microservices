@@ -156,6 +156,9 @@ const refreshAccessToken = async (req, res) => {
     if (!user) {
       throw new ApiError("Invalid refresh token", 400);
     }
+    const userObj = user.toObject();
+    delete userObj.password;
+    delete userObj.refresh_token;
 
     if (refreshToken !== user.refresh_token) {
       throw new ApiError("Refresh token has expired or been used", 403);
@@ -168,7 +171,9 @@ const refreshAccessToken = async (req, res) => {
 
     return res
       .status(200)
-      .json(new ApiResponse(null, "Access token refreshed successfully", 200));
+      .json(
+        new ApiResponse(userObj, "Access token refreshed successfully", 200)
+      );
   } catch (error) {
     return res.status(error.statusCode || 400).json({
       message: error?.message || "Invalid refresh token",
@@ -177,4 +182,3 @@ const refreshAccessToken = async (req, res) => {
 };
 
 export { createUser, loginUser, logoutUser, refreshAccessToken };
-  

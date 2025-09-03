@@ -1,12 +1,77 @@
-import { NavLink } from "react-router-dom";
-import { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import axios from "axios";
+import { login, logout, userDetails } from "../features/UserSlice";
 
 function NavBar() {
-  const logout = true;
+  const user = useSelector((state) => state.user);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const [menu, setMenu] = useState(false);
+
+  // Navigate to signin page
+  const SignInPage = () => {
+    navigate("/signin");
+  };
+
+  // Auto-refresh access token on component mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await axios.post(
+          "http://localhost:8000/api/users/refresh-token",
+          null,
+          {
+            withCredentials: true,
+          }
+        );
+        dispatch(login());
+        dispatch(userDetails(res?.data?.data));
+      } catch (error) {
+        if (error.response) {
+          console.error(
+            "❌ Token refresh failed:",
+            error.response.data.message
+          );
+        } else {
+          console.error(
+            "❌ Network error during token refresh:",
+            error.message
+          );
+        }
+        dispatch(logout());
+        dispatch(userDetails(null));
+      }
+    })();
+  }, [dispatch]);
+
+  // Logout handler
+  const handleLogout = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:8000/api/users/logout-user",
+        {
+          withCredentials: true,
+        }
+      );
+      dispatch(logout());
+      dispatch(userDetails(null));
+    } catch (error) {
+      if (error.response) {
+        console.error("❌ Logout failed:", error.response.data.message);
+      } else {
+        console.error("❌ Network error during logout:", error.message);
+      }
+    }
+  };
+
   return (
     <>
-      <nav className="w-full flex items-center justify-around  h-15 text-amber-50 bg-slate-700">
+      <nav className="w-full flex items-center justify-around h-15 text-amber-50 bg-slate-700">
+        {/* Logo */}
         <div>
           <img
             className="h-12"
@@ -14,13 +79,15 @@ function NavBar() {
             alt="logo"
           />
         </div>
+
+        {/* Desktop Navigation */}
         <div>
-          <ul className="hidden md:flex gap-7 max-w-lg text-lg font-semibold leading-relaxed text-gray-900 dark:text-white ">
+          <ul className="hidden md:flex gap-7 text-lg font-semibold text-white">
             <li>
               <NavLink
                 to="/"
                 className={({ isActive }) =>
-                  isActive && "text-amber-300 underline font-semibold"
+                  isActive ? "text-amber-300 underline font-semibold" : ""
                 }
               >
                 Home
@@ -30,7 +97,7 @@ function NavBar() {
               <NavLink
                 to="/about"
                 className={({ isActive }) =>
-                  isActive && "text-amber-300 underline font-semibold"
+                  isActive ? "text-amber-300 underline font-semibold" : ""
                 }
               >
                 About
@@ -40,7 +107,7 @@ function NavBar() {
               <NavLink
                 to="/doctors"
                 className={({ isActive }) =>
-                  isActive && "text-amber-300 underline font-semibold"
+                  isActive ? "text-amber-300 underline font-semibold" : ""
                 }
               >
                 Doctors
@@ -50,7 +117,7 @@ function NavBar() {
               <NavLink
                 to="/appointments"
                 className={({ isActive }) =>
-                  isActive && "text-amber-300 underline font-semibold"
+                  isActive ? "text-amber-300 underline font-semibold" : ""
                 }
               >
                 Appointments
@@ -58,11 +125,17 @@ function NavBar() {
             </li>
           </ul>
         </div>
+
+        {/* Auth Buttons + Mobile Menu */}
         <div>
-          {logout ? (
-            <button className="btn btn-soft btn-primary">Login</button>
+          {!user.active ? (
+            <button className="btn btn-soft btn-primary" onClick={SignInPage}>
+              Login
+            </button>
           ) : (
-            <button className="btn btn-soft btn-error">Logout</button>
+            <button className="btn btn-soft btn-error" onClick={handleLogout}>
+              Logout
+            </button>
           )}
 
           <button
@@ -74,10 +147,12 @@ function NavBar() {
           </button>
         </div>
       </nav>
+
+      {/* Mobile Menu */}
       {menu && (
-        <div className=" right-0 md:hidden fixed">
+        <div className="fixed right-0 md:hidden">
           <ul className="menu bg-base-200 rounded-box w-50 p-4">
-            {/* Cancel Button Row */}
+            {/* Close Button */}
             <div className="flex justify-end mb-2">
               <button
                 type="button"
@@ -88,7 +163,7 @@ function NavBar() {
               </button>
             </div>
 
-            {/* Menu Items */}
+            {/* Mobile Links */}
             <li>
               <NavLink to="/home">Home</NavLink>
             </li>
