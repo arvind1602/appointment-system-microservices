@@ -1,54 +1,67 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import { login, userDetails } from "../../features/UserSlice";
-import { useNavigate } from "react-router-dom";
 
 function Signin() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const activeStatus = useSelector((state) => state.user.active);
 
   const [form, setForm] = useState({ username: "", password: "" });
-
   const [error, setError] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (activeStatus) {
+      navigate("/");
+    }
+  }, [activeStatus, navigate]);
+
+  // Clear error after a delay
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => {
+      setError(false);
+      setErrorMsg(null);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [error]);
+
+  // Handle form input changes
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setError(false);
+    setErrorMsg(null);
   };
 
+  // Handle form submission
   const formSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const res = await axios.post(
-        "http://localhost:8000/api/users/login-user",
+        `${"http://localhost:8000"}/api/users/login-user`,
         form,
         {
           withCredentials: true,
         }
       );
-      setError(false);
-      setErrorMsg(null);
+
+      // On successful login
       dispatch(login());
       dispatch(userDetails(res?.data?.data));
       navigate("/");
-    } catch (error) {
+    } catch (err) {
       setError(true);
-      setErrorMsg(error?.response?.data?.message);
+      setErrorMsg(err?.response?.data?.message || "Login failed. Try again.");
     }
   };
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setErrorMsg(null);
-      setError(false);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [errorMsg]);
 
   return (
     <>
+      {/* Error Alert */}
       {error && (
         <div
           role="alert"
@@ -70,19 +83,22 @@ function Signin() {
           <span>{errorMsg}</span>
         </div>
       )}
-      <div className=" min-h-screen flex justify-center items-center">
+
+      {/* Sign In Form */}
+      <div className="min-h-screen flex justify-center items-center">
         <form
           className="w-full max-w-md p-6 rounded shadow"
-          action=""
           onSubmit={formSubmit}
         >
           <h2 className="text-2xl text-shadow-base-200 my-2">
             Sign In to Doctor-Appointment
           </h2>
+
+          {/* Username Field */}
           <fieldset className="fieldset">
             <legend className="fieldset-legend">Username</legend>
             <input
-              type="username"
+              type="text"
               className="input validator"
               required
               placeholder="Username"
@@ -97,6 +113,7 @@ function Signin() {
             <p className="validator-hint">Must be 3 to 30 characters</p>
           </fieldset>
 
+          {/* Password Field */}
           <fieldset className="fieldset">
             <legend className="fieldset-legend">Password</legend>
             <input
@@ -112,24 +129,24 @@ function Signin() {
               onChange={handleChange}
             />
             <p className="validator-hint">
-              Must be more than 8 characters, including At least one number,one
-              lowercase letter, one uppercase letter
+              Must be more than 8 characters, including at least one number, one
+              lowercase letter, and one uppercase letter.
             </p>
           </fieldset>
-          <button
-            className="btn btn-active btn-primary"
-            type="submit"
-            onClick={formSubmit}
-          >
-            login
+
+          {/* Submit Button */}
+          <button className="btn btn-active btn-primary" type="submit">
+            Login
           </button>
+
+          {/* Signup Redirect */}
           <p className="text-gray-500 whitespace-pre-line dark:text-gray-400 mt-2.5">
             Don’t have an account?
             <NavLink
               to="/signup"
               className="text-blue-500 hover:underline mx-1"
             >
-              SingUp Here
+              Sign Up Here
             </NavLink>
           </p>
         </form>
